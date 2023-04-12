@@ -13,7 +13,7 @@ type TextHandler struct {
 }
 
 type SpellingCheckService interface {
-	CheckSpelling(text *model.Text) (string, error)
+	CheckSpelling(text *model.Text) (*model.FixedTextResponse, error)
 }
 
 func NewTextHandler(logger *zap.Logger, s SpellingCheckService) *TextHandler {
@@ -31,5 +31,6 @@ func (t *TextHandler) CheckForSpelling(context *gin.Context) {
 	if err != nil {
 		// TODO: handle error
 	}
-	context.JSON(http.StatusOK, gin.H{"data": checkedText})
+	t.logger.Sugar().Infof("Checked text response: %v", *checkedText)   // value
+	context.JSON(http.StatusOK, gin.H{"checkedTextData": &checkedText}) // link
 }
