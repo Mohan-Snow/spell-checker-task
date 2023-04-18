@@ -5,6 +5,8 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"net/url"
+	"strings"
+
 	"spell-checker/internal/model"
 )
 
@@ -18,44 +20,41 @@ func NewSpellingCheckService(l *zap.Logger) *SpellingCheckService {
 	return &SpellingCheckService{logger: l}
 }
 
-func (s *SpellingCheckService) CheckSpelling(text *model.Text) (*model.FixedTextResponse, error) {
-	//textJson, _ := json.Marshal(text)
-	response, err := s.doCheckRequest(text)
+func (s *SpellingCheckService) CheckSpelling(initialText *model.Text) (*string, error) {
+	splitText := strings.Split(initialText.Text, " ")
+	checkedText, err := s.checkSplitText(splitText)
 	if err != nil {
-		return nil, err
+		return &initialText.Text, err
 	}
-	s.logger.Sugar().Infof("ResponseModel: %v", *response)
-	var fixedText model.FixedTextResponse
-	for _, val := range *response {
-		for _, checkedResponse := range val {
-			fixedText.InitialText = checkedResponse.InitialWord
-			fixedText.FixedText = checkedResponse.FixedSpellingWords
-		}
-	}
+	fixedText := strings.Join(*checkedText, " ")
 	return &fixedText, nil
 }
 
-func (s *SpellingCheckService) doCheckRequest(text *model.Text) (*[]model.CheckedText, error) {
-	//request, err := http.NewRequest("GET", spellingCheckExternalService, bytes.NewBuffer(textJson))
-	//if err != nil {
-	//	TODO: handle error
-	//return nil, err
-	//}
-	//request.Header.Add("Content-Type", "application/json")
-	//s.logger.Sugar().Infof("Request: %v", request.Body)
-	//client := &http.Client{}
-	//response, err := client.Do(request)
+func (s *SpellingCheckService) checkSplitText(splitText []string) (*[]string, error) {
+	response, err := s.doRequestToCheckWords(&splitText)
+	if err != nil {
+		return &splitText, err
+	}
+	s.logger.Sugar().Infof("ResponseModel: %v", *response)
+	for index, sliceWithFix := range *response {
+		if len(sliceWithFix) != 0 {
+			splitText[index] = sliceWithFix[0].FixedSpellingWords[0]
+		}
+	}
+	return &splitText, nil
+}
 
+func (s *SpellingCheckService) doRequestToCheckWords(splitText *[]string) (*[]model.CheckedText, error) {
 	formData := url.Values{}
-	formData.Add("text", text.Text)
+	for _, word := range *splitText {
+		formData.Add("text", word)
+	}
 	response, err := http.PostForm(spellingCheckExternalService, formData)
 	defer response.Body.Close()
 	if err != nil {
-		// TODO: handle error
 		return nil, err
 	}
-	s.logger.Sugar().Infof("Response: %v", &response.Body)
 	var responseModel []model.CheckedText
-	err = json.NewDecoder(response.Body).Decode(&responseModel) // change to unmarshall
+	err = json.NewDecoder(response.Body).Decode(&responseModel)
 	return &responseModel, nil
 }

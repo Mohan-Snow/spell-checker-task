@@ -4,11 +4,6 @@ type Text struct {
 	Text string `json:"text" binding:"required"`
 }
 
-type FixedTextResponse struct {
-	InitialText string   `json:"initialText"`
-	FixedText   []string `json:"fixedText"`
-}
-
 type CheckedText []struct {
 	Code               int      `json:"code"`
 	Position           int      `json:"pos"`
