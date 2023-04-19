@@ -29,9 +29,9 @@ func (t *TextHandler) CheckForSpelling(context *gin.Context) {
 	}
 	fixedText, err := t.service.CheckSpelling(&input)
 	if err != nil {
-		// TODO: handle error
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	t.logger.Sugar().Infof("Checked text: %v", *fixedText) // value
-	//context.JSON(http.StatusOK, gin.H{"checkedTextData": &fixedText}) // link
-	context.JSON(http.StatusOK, &fixedText)
+	context.JSON(http.StatusOK, gin.H{"text": &fixedText}) // link
+	//context.JSON(http.StatusOK, &fixedText)
 }

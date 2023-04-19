@@ -21,8 +21,9 @@ func NewSpellingCheckService(l *zap.Logger) *SpellingCheckService {
 }
 
 func (s *SpellingCheckService) CheckSpelling(initialText *model.Text) (*string, error) {
+	s.logger.Sugar().Infof("Correct errors in string: %s", initialText.Text)
 	splitText := strings.Split(initialText.Text, " ")
-	checkedText, err := s.checkSplitText(splitText)
+	checkedText, err := s.correctErrorsInText(splitText)
 	if err != nil {
 		return &initialText.Text, err
 	}
@@ -30,7 +31,7 @@ func (s *SpellingCheckService) CheckSpelling(initialText *model.Text) (*string, 
 	return &fixedText, nil
 }
 
-func (s *SpellingCheckService) checkSplitText(splitText []string) (*[]string, error) {
+func (s *SpellingCheckService) correctErrorsInText(splitText []string) (*[]string, error) {
 	response, err := s.doRequestToCheckWords(&splitText)
 	if err != nil {
 		return &splitText, err
